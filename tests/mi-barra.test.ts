@@ -26,16 +26,16 @@ test('contexto y límites muestran el porcentaje de la API', async () => {
   expect(five?.percent).toBe(23.5)
   const g = limitGauge('fiveHour', five, Date.parse('2026-10-18T13:00:00Z'))
   expect(g.value).toBe('24%')
-  expect(g.hint).toBe('↻ 2 h')
+  expect(g.hint).toBe('↻2h')
   expect(pickLimit([{ kind: 'seven_day', percentUsed: 61 }], 'seven_day')?.resetsAt).toBe(null)
 })
 
 test('caché: último uso real y restante estimado con "~"', async () => {
   const g = cacheGauge(0, 12 * 60 * 1000, HOUR)
-  expect(g.hint).toBe('último uso hace 12 min')
-  expect(g.value).toBe('~48 min')
+  expect(g.hint).toBe('hace 12m')
+  expect(g.value).toBe('~48m')
   expect(cacheGauge(0, 2 * HOUR, HOUR).value).toBe('~vencido')
-  expect(formatSpan(26 * HOUR)).toBe('1 d 2 h')
+  expect(formatSpan(26 * HOUR)).toBe('1d2h')
 })
 
 test('la mascota sale del permiso solo si entró', async () => {

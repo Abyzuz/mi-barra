@@ -158,10 +158,7 @@ export const register: Register = on => {
     const { Box, Svg, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="row" alignItems="center" gap={3}>
-        <Box key="pet" flexDirection="row" alignItems="center" gap={1}>
-          <Svg source={mascotSvg(mood)} alt={`Mascota: ${MOOD_LABEL[mood]}`} width={32} height={32} isInteractive />
-          <Text dimColor wrap="truncate-end">{MOOD_LABEL[mood]}</Text>
-        </Box>
+        <Svg key="pet" source={mascotSvg(mood)} alt={`Mascota: ${MOOD_LABEL[mood]}`} width={36} height={36} isInteractive />
         {list.map(g => (
           <Box key={g.key} flexDirection="row" alignItems="center" gap={1}>
             <Svg source={ringSvg(g.fill, g.tone)} alt={`${g.label}: ${g.value}`} width={24} height={24} />

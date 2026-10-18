@@ -3,7 +3,7 @@
 Mod de Claude Code: una barra sobre el prompt con cuatro indicadores y una mascota pixel-art animada.
 
 - **Contexto usado**, **límite de 5 h** y **límite semanal**: los porcentajes que reporta la API. Si un dato no llega, dice "no disponible".
-- **Caché**: "último uso hace X" (dato real) y un restante **estimado** con `~`. La API no informa la duración del caché; se supone en `CACHE_TTL_MS` al inicio de `hooks/register.tsx` (1 h por defecto).
+- **Caché**: "hace X", el último uso (dato real), y un restante **estimado** con `~`. La API no informa la duración del caché; se supone en `CACHE_TTL_MS` al inicio de `hooks/register.tsx` (1 h por defecto).
 - **Mascota**: pensando, escribiendo (saca su notebook), esperando tu permiso, terminado e inactivo.
 
 Sin red, sin procesos externos, sin escribir archivos: solo lee `$.session.usage()` y los eventos de la sesión.

@@ -23,19 +23,19 @@ const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
-/** "45 s", "12 min", "2 h 5 min", "3 d 4 h". */
+/** Compacto para que la barra no se parta: "45s", "12m", "2h5m", "3d4h". */
 export function formatSpan(ms: number): string {
   const span = Math.max(0, ms)
-  if (span < MINUTE) return `${Math.floor(span / 1000)} s`
-  if (span < HOUR) return `${Math.floor(span / MINUTE)} min`
+  if (span < MINUTE) return `${Math.floor(span / 1000)}s`
+  if (span < HOUR) return `${Math.floor(span / MINUTE)}m`
   if (span < DAY) {
     const h = Math.floor(span / HOUR)
     const m = Math.floor((span % HOUR) / MINUTE)
-    return m ? `${h} h ${m} min` : `${h} h`
+    return m ? `${h}h${m}m` : `${h}h`
   }
   const d = Math.floor(span / DAY)
   const h = Math.floor((span % DAY) / HOUR)
-  return h ? `${d} d ${h} h` : `${d} d`
+  return h ? `${d}d${h}h` : `${d}d`
 }
 
 /** Tono de un porcentaje usado: verde, ámbar desde 60 %, rojo desde 85 %. */
@@ -64,7 +64,7 @@ export function contextGauge(percent: number | null): Gauge {
 }
 
 /**
- * El caché: lo real es "último uso hace X". El restante es una estimación
+ * El caché: lo real es "hace X" (el último uso). El restante es una estimación
  * con un TTL supuesto (la API no informa la duración), y se marca con "~".
  */
 export function cacheGauge(cacheAt: number | null, now: number, ttlMs: number): Gauge {
@@ -73,7 +73,7 @@ export function cacheGauge(cacheAt: number | null, now: number, ttlMs: number): 
   }
   const elapsed = Math.max(0, now - cacheAt)
   const remaining = ttlMs - elapsed
-  const hint = `último uso hace ${formatSpan(elapsed)}`
+  const hint = `hace ${formatSpan(elapsed)}`
   if (remaining <= 0) {
     return { key: 'cache', label: 'Caché', fill: 0, value: '~vencido', hint, tone: 'bad' }
   }
@@ -89,11 +89,11 @@ export function cacheGauge(cacheAt: number | null, now: number, ttlMs: number): 
 }
 
 export function limitGauge(key: 'fiveHour' | 'week', limit: Limit | null, now: number): Gauge {
-  const label = key === 'fiveHour' ? 'Límite 5 h' : 'Semanal'
+  const label = key === 'fiveHour' ? 'Límite 5h' : 'Semanal'
   if (limit === null) {
     return { key, label, fill: null, value: UNAVAILABLE, hint: '', tone: 'off' }
   }
-  const hint = limit.resetsAt === null ? '' : `↻ ${formatSpan(limit.resetsAt - now)}`
+  const hint = limit.resetsAt === null ? '' : `↻${formatSpan(limit.resetsAt - now)}`
   return {
     key,
     label,
