@@ -1,0 +1,6 @@
+{
+  "name": "mi-barra",
+  "owner": { "name": "Abyzuz" },
+  "metadata": { "description": "Barra sobre el prompt con contexto, caché, límites y una mascota animada." },
+  "plugins": [{ "name": "mi-barra", "source": "./" }]
+}
