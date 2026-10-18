@@ -12,6 +12,9 @@ export type Limit = {
 /** Lo que `$.session.usage()` / `session.measure` reportan; null = no disponible. */
 export type Usage = {
   context: number | null
+  /** Tokens usados y tamaño de la ventana; null si la API no los dio. */
+  contextTokens: number | null
+  contextWindow: number | null
   fiveHour: Limit | null
   week: Limit | null
 }

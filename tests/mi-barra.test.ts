@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { cacheGauge, contextGauge, formatSpan, limitGauge, pickLimit, UNAVAILABLE } from '../src/gauges.ts'
+import { cacheGauge, contextGauge, formatSpan, formatTokens, limitGauge, pickLimit, UNAVAILABLE } from '../src/gauges.ts'
 import { nextMood } from '../src/mood.ts'
 import { mascotSvg, ringSvg } from '../src/svg.ts'
 
@@ -22,6 +22,10 @@ test('sin datos, cada indicador dice "no disponible" y no inventa un número', a
 
 test('contexto y límites muestran el porcentaje de la API', async () => {
   expect(contextGauge(42).value).toBe('42%')
+  expect(contextGauge(35, 350_412, 1_000_000).hint).toBe('350k/1M')
+  expect(contextGauge(35).hint).toBe('')
+  expect(formatTokens(1_250_000)).toBe('1.3M')
+  expect(formatTokens(850)).toBe('850')
   const five = pickLimit([{ kind: 'five_hour', percentUsed: 23.5, resetsAt: '2026-10-18T15:00:00Z' }], 'five_hour')
   expect(five?.percent).toBe(23.5)
   const g = limitGauge('fiveHour', five, Date.parse('2026-10-18T13:00:00Z'))

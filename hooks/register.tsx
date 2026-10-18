@@ -21,13 +21,15 @@ const cacheAtAtom = atom({ plugin: 'mi-barra', key: 'cacheAt' } as const, null)
 const nowAtom = atom({ plugin: 'mi-barra', key: 'now' } as const, 0)
 
 type UsageLike = {
-  context: { percent?: number }
+  context: { percent?: number; tokens?: number; window: number }
   rateLimits: readonly { kind: string; percentUsed: number; resetsAt?: string }[]
 }
 
 function toUsage(u: UsageLike): Usage {
   return {
     context: u.context.percent ?? null,
+    contextTokens: u.context.tokens ?? null,
+    contextWindow: u.context.percent === undefined ? null : u.context.window,
     fiveHour: pickLimit(u.rateLimits, 'five_hour'),
     week: pickLimit(u.rateLimits, 'seven_day'),
   }
@@ -45,7 +47,7 @@ function bar(fill: number | null): string {
 }
 
 function terminalLine(g: Gauge): string {
-  return g.fill === null ? `${g.label} ${g.value}` : `${g.label} ${bar(g.fill)} ${g.value}${g.key === 'cache' ? ` (${g.hint})` : ''}`
+  return g.fill === null ? `${g.label} ${g.value}` : `${g.label} ${bar(g.fill)} ${g.value}${g.hint ? ` (${g.hint})` : ''}`
 }
 
 export const register: Register = on => {

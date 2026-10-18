@@ -49,7 +49,14 @@ function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n))
 }
 
-export function contextGauge(percent: number | null): Gauge {
+/** "850", "350k", "1M", "1.2M". */
+export function formatTokens(n: number): string {
+  if (n < 1000) return `${Math.round(n)}`
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`
+  return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+}
+
+export function contextGauge(percent: number | null, tokens: number | null = null, window: number | null = null): Gauge {
   if (percent === null) {
     return { key: 'context', label: 'Contexto', fill: null, value: UNAVAILABLE, hint: '', tone: 'off' }
   }
@@ -58,7 +65,7 @@ export function contextGauge(percent: number | null): Gauge {
     label: 'Contexto',
     fill: clamp01(percent / 100),
     value: `${Math.round(percent)}%`,
-    hint: '',
+    hint: tokens != null && window != null ? `${formatTokens(tokens)}/${formatTokens(window)}` : '',
     tone: toneOfUsed(percent),
   }
 }
@@ -106,7 +113,7 @@ export function limitGauge(key: 'fiveHour' | 'week', limit: Limit | null, now: n
 
 export function gauges(usage: Usage, cacheAt: number | null, now: number, ttlMs: number): Gauge[] {
   return [
-    contextGauge(usage.context),
+    contextGauge(usage.context, usage.contextTokens, usage.contextWindow),
     cacheGauge(cacheAt, now, ttlMs),
     limitGauge('fiveHour', usage.fiveHour, now),
     limitGauge('week', usage.week, now),
@@ -124,4 +131,4 @@ export function pickLimit(
   return { percent: found.percentUsed, resetsAt: Number.isNaN(parsed) ? null : parsed }
 }
 
-export const EMPTY_USAGE: Usage = { context: null, fiveHour: null, week: null }
+export const EMPTY_USAGE: Usage = { context: null, contextTokens: null, contextWindow: null, fiveHour: null, week: null }
