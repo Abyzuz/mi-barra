@@ -26,8 +26,6 @@ claude plugin install mi-barra --marketplace Abyzuz/mi-barra
 
 En la app de escritorio, donde `/plugin` no corre: haz clic en **+** junto al cuadro del prompt, luego **Plugins**, **Add marketplace** con `Abyzuz/mi-barra` y después **Add plugin**.
 
-El repositorio es privado: la máquina necesita acceso de lectura en GitHub y una credencial de git para github.com (por ejemplo `gh auth login` y luego `gh auth setup-git`).
-
 ## Probar sin instalar
 
 ```
