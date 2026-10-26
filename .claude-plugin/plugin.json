@@ -2,6 +2,7 @@
   "name": "mi-barra",
   "version": "0.2.2",
   "author": { "name": "Abyzuz" },
+  "license": "MIT",
   "description": "Barra sobre el prompt con contexto, caché, límites 5 h y semanal, y una mascota animada según el estado de la sesión.",
   "types": "./types/index.d.ts",
   "userConfig": {
