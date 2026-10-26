@@ -2,15 +2,18 @@
 // la barra dibuja. Sin `$`: se prueba con números.
 import type { Limit, Usage } from '../types'
 
+/** Umbrales del contexto en tokens. Se define aquí y contexto.ts lo reexporta (P-M01: sin ciclo). */
+export type Umbrales = { ambar: number; rojo: number }
+
 export type Tone = 'ok' | 'warn' | 'bad' | 'off'
 
 /** Un indicador listo para dibujar. `fill` null = no disponible. */
 export type Gauge = {
-  key: 'context' | 'cache' | 'fiveHour' | 'week'
+  key: 'etapa' | 'context' | 'cache' | 'fiveHour' | 'week' | 'sync'
   label: string
   /** Fracción del anillo, 0 a 1; null cuando el dato no está disponible. */
   fill: number | null
-  /** El número grande: "42%", "~48 min" o "no disponible". */
+  /** El número grande: "210k", "42%", "~48 min" o "no disponible". */
   value: string
   /** Lo que va tras el valor: "último uso hace 12 min", "↻ 2 h" (vacío si nada). */
   hint: string
@@ -45,28 +48,45 @@ export function toneOfUsed(percent: number): Tone {
   return 'ok'
 }
 
+const PESO: Record<Tone, number> = { off: 0, ok: 1, warn: 2, bad: 3 }
+
+/**
+ * Tono del anillo de contexto: el peor entre la regla absoluta (ámbar y rojo en
+ * tokens) y la porcentual de la ventana (ámbar desde 60 %, rojo desde 85 %), para
+ * que una ventana chica no se quede en ámbar al 99 %. `'off'` si falta algún dato.
+ * Vive aquí para que `contextGauge` no dependa de contexto.ts, que lo reexporta.
+ */
+export function tonoContexto(tokens: number | null, window: number | null, u: Umbrales): Tone {
+  if (tokens === null || window === null || window <= 0) return 'off'
+  const absoluto: Tone = tokens >= u.rojo ? 'bad' : tokens >= u.ambar ? 'warn' : 'ok'
+  const porcentual = toneOfUsed((tokens / window) * 100)
+  return PESO[porcentual] > PESO[absoluto] ? porcentual : absoluto
+}
+
 function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n))
 }
 
-/** "850", "350k", "1M", "1.2M". */
+/** "850", "350k", "1M", "1.2M". Redondea a miles primero: 999 500 es "1M", no "1000k". */
 export function formatTokens(n: number): string {
   if (n < 1000) return `${Math.round(n)}`
-  if (n < 1_000_000) return `${Math.round(n / 1000)}k`
+  const miles = Math.round(n / 1000)
+  if (miles < 1000) return `${miles}k`
   return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
 }
 
-export function contextGauge(percent: number | null, tokens: number | null = null, window: number | null = null): Gauge {
-  if (percent === null) {
+/** El anillo de contexto: en tokens, con el tono del peor entre umbrales y porcentaje. */
+export function contextGauge(tokens: number | null, window: number | null, u: Umbrales): Gauge {
+  if (tokens === null || window === null || window <= 0) {
     return { key: 'context', label: 'Contexto', fill: null, value: UNAVAILABLE, hint: '', tone: 'off' }
   }
   return {
     key: 'context',
     label: 'Contexto',
-    fill: clamp01(percent / 100),
-    value: `${Math.round(percent)}%`,
-    hint: tokens != null && window != null ? `${formatTokens(tokens)}/${formatTokens(window)}` : '',
-    tone: toneOfUsed(percent),
+    fill: clamp01(tokens / window),
+    value: formatTokens(tokens),
+    hint: `${Math.round((tokens / window) * 100)} % de ${formatTokens(window)}`,
+    tone: tonoContexto(tokens, window, u),
   }
 }
 
@@ -111,9 +131,45 @@ export function limitGauge(key: 'fiveHour' | 'week', limit: Limit | null, now: n
   }
 }
 
-export function gauges(usage: Usage, cacheAt: number | null, now: number, ttlMs: number): Gauge[] {
+/** Palabra corta de cada etapa para el centro del anillo (la clave es `ETIQUETA` de etapa.ts; un test las ata). */
+const ETAPA_CORTA: Record<string, string> = {
+  Spec: 'Spec',
+  Plan: 'Plan',
+  Ejecución: 'Ejec.',
+  'Revisión final': 'Final',
+  'Uso real': 'Uso',
+}
+
+/**
+ * Lo que va dentro del anillo en la banda de escritorio: corto, sin pista y de cuatro
+ * caracteres o menos donde se puede. Sin dato, un guion (el `alt` conserva la palabra completa).
+ */
+export function valorCorto(g: Gauge): string {
+  switch (g.key) {
+    case 'etapa':
+      return ETAPA_CORTA[g.value] ?? '—'
+    case 'sync': {
+      const pendientes = /^⚠ (\d+) por decidir$/.exec(g.value)
+      if (pendientes) return `⚠${pendientes[1]}`
+      const glifo = /^[✓⚠↑]/.exec(g.value)
+      return glifo ? glifo[0] : '—'
+    }
+    case 'cache':
+      if (g.value === UNAVAILABLE) return '—'
+      return g.value === '~vencido' ? 'venc.' : g.value.replace(/^~/, '')
+    default:
+      return g.value === UNAVAILABLE ? '—' : g.value
+  }
+}
+
+/** La etiqueta bajo el anillo en la banda de escritorio (la de Etapa la da `rotuloEtapa`). */
+export function rotuloCorto(g: Gauge): string {
+  return g.key === 'fiveHour' ? '5h' : g.label
+}
+
+export function gauges(usage: Usage, cacheAt: number | null, now: number, ttlMs: number, u: Umbrales): Gauge[] {
   return [
-    contextGauge(usage.context, usage.contextTokens, usage.contextWindow),
+    contextGauge(usage.contextTokens, usage.contextWindow, u),
     cacheGauge(cacheAt, now, ttlMs),
     limitGauge('fiveHour', usage.fiveHour, now),
     limitGauge('week', usage.week, now),

@@ -13,8 +13,36 @@ export const TONE_COLOR: Record<Tone, string> = {
 
 const TRACK = 'rgba(138,143,152,0.30)'
 
-/** Anillo de progreso de 36×36. `fill` null = gris punteado (no disponible). */
-export function ringSvg(fill: number | null, tone: Tone): string {
+/** Color del valor dentro del anillo: un tono medio por tono del anillo, legible en fondo claro y oscuro. */
+const TEXT_COLOR: Record<Tone, string> = {
+  ok: '#1D9E75',
+  warn: '#EF9F27',
+  bad: '#E24B4A',
+  off: '#888780',
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+/**
+ * El valor dentro del anillo: centrado, de peso medio, del color de su tono (atributo `fill`
+ * fijo: el host dibuja el Svg como imagen aislada, sin tema ni garantía de `<style>`).
+ * Tamaño por largo: hasta 3 caracteres 11 px, 4 caracteres 10 px, 5 o más 9 px.
+ */
+function centro(texto: string | undefined, tone: Tone): string {
+  if (!texto) return ''
+  const largo = [...texto].length
+  const size = largo <= 3 ? 11 : largo === 4 ? 10 : 9
+  const y = (18 + size * 0.36).toFixed(2)
+  return (
+    `<text x="18" y="${y}" font-size="${size}" font-weight="500" font-family="system-ui,sans-serif" ` +
+    `text-anchor="middle" fill="${TEXT_COLOR[tone]}">${escapeXml(texto)}</text>`
+  )
+}
+
+/** Anillo de progreso de 36×36. `fill` null = gris punteado (no disponible). `texto` va centrado dentro. */
+export function ringSvg(fill: number | null, tone: Tone, texto?: string): string {
   const r = 14
   const c = 2 * Math.PI * r
   const track =
@@ -26,7 +54,37 @@ export function ringSvg(fill: number | null, tone: Tone): string {
       ? ''
       : `<circle cx="18" cy="18" r="${r}" fill="none" stroke="${TONE_COLOR[tone]}" stroke-width="4" ` +
         `stroke-linecap="round" stroke-dasharray="${(c * fill).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 18 18)"/>`
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">${track}${arc}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">${track}${arc}${centro(texto, tone)}</svg>`
+}
+
+/**
+ * Anillo de la etapa, de 36×36, en cinco segmentos de arco (no un llenado continuo,
+ * que en los otros anillos significa "gastado"): el de `indice` en verde lleno, los
+ * anteriores en verde al 35 %, los siguientes del color de la pista; `null` = los
+ * cinco grises y punteados ("sin etapa"). `texto` va centrado dentro.
+ */
+export function etapaSvg(indice: number | null, texto?: string): string {
+  const r = 14
+  const holgura = 4
+  const punto = (grados: number) => {
+    const rad = (grados * Math.PI) / 180
+    return `${(18 + r * Math.cos(rad)).toFixed(2)} ${(18 + r * Math.sin(rad)).toFixed(2)}`
+  }
+  const segmentos = [0, 1, 2, 3, 4].map(i => {
+    const a0 = -90 + 72 * i + holgura
+    const a1 = -90 + 72 * (i + 1) - holgura
+    const d = `M${punto(a0)} A${r} ${r} 0 0 1 ${punto(a1)}`
+    const trazo =
+      indice === null
+        ? `stroke="${TRACK}" stroke-dasharray="2 2.5"`
+        : i === indice
+          ? `stroke="${TONE_COLOR.ok}"`
+          : i < indice
+            ? `stroke="${TONE_COLOR.ok}" stroke-opacity="0.35"`
+            : `stroke="${TRACK}"`
+    return `<path d="${d}" fill="none" ${trazo} stroke-width="4"/>`
+  })
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">${segmentos.join('')}${centro(texto, indice === null ? 'off' : 'ok')}</svg>`
 }
 
 // --- La mascota -------------------------------------------------------------
@@ -137,11 +195,16 @@ function crab(mood: Mood): string {
   }
 }
 
-/** La mascota de 48×48 con la animación de cada estado. */
-export function mascotSvg(mood: Mood): string {
+/** Distintivo de aviso: un "!" rojo en la esquina superior derecha, sin tocar el estado de ánimo. */
+const ALERT_BADGE =
+  `<text x="40" y="12" font-size="14" font-weight="700" font-family="monospace" text-anchor="middle" fill="${TONE_COLOR.bad}">!</text>`
+
+/** La mascota de 48×48 con la animación de cada estado; con `alerta`, un "!" rojo encima. */
+export function mascotSvg(mood: Mood, alerta = false): string {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" shape-rendering="crispEdges">` +
     crab(mood) +
+    (alerta ? ALERT_BADGE : '') +
     `</svg>`
   )
 }

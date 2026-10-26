@@ -1,7 +1,21 @@
 {
   "name": "mi-barra",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "author": { "name": "Abyzuz" },
   "description": "Barra sobre el prompt con contexto, caché, límites 5 h y semanal, y una mascota animada según el estado de la sesión.",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "ambar": {
+      "type": "number",
+      "title": "Contexto ámbar",
+      "description": "Tokens de contexto desde los que el anillo y el aviso pasan a ámbar",
+      "default": 150000
+    },
+    "rojo": {
+      "type": "number",
+      "title": "Contexto rojo",
+      "description": "Tokens de contexto desde los que el aviso pasa a rojo",
+      "default": 200000
+    }
+  }
 }
